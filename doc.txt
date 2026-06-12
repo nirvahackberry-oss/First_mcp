@@ -1,7 +1,7 @@
 https://accounts.zoho.in/oauth/v2/auth?scope=ZohoSheet.dataAPI.UPDATE,ZohoSheet.dataAPI.READ&client_id=CLIENT_ID =1000...&response_type=code&access_type=offline&redirect_uri=http://localhost:8080/callback
 
 
-
+https://chatgpt.com/share/6a2bb848-acf0-83ee-aae4-e5d3678ef5d1
 
 
 Vlab-		Enhanced DBMS lab support and Docker configuration: updated MySQL/Postgres init scripts, DBMS Dockerfile and start flow, shared lab_server changes, deploy workflow, and Terraform variables. Improved Big Data lab with Hadoop core/hdfs config, sample sales data, Dockerfile/entrypoint updates, frontend compute Editor changes, and deploy workflow alignment. Added data visualization libraries to the Python lab Dockerfile.
