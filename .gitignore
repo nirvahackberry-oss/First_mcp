@@ -1,0 +1,41 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Secrets and local config
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Tools / IDE
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local data / scratch
+*.xlsx
+*.xls
+_post_*.py
+_append_*.py

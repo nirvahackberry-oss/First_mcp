@@ -1,0 +1,235 @@
+https://accounts.zoho.in/oauth/v2/auth?scope=ZohoSheet.dataAPI.UPDATE,ZohoSheet.dataAPI.READ&client_id=CLIENT_ID =1000...&response_type=code&access_type=offline&redirect_uri=http://localhost:8080/callback
+
+
+
+
+
+Vlab-		Enhanced DBMS lab support and Docker configuration: updated MySQL/Postgres init scripts, DBMS Dockerfile and start flow, shared lab_server changes, deploy workflow, and Terraform variables. Improved Big Data lab with Hadoop core/hdfs config, sample sales data, Dockerfile/entrypoint updates, frontend compute Editor changes, and deploy workflow alignment. Added data visualization libraries to the Python lab Dockerfile.
+Laajavab Boutique-		Added highlights for unpaid and recently paid orders in the admin order list view. Enhanced order list template with improved address display and styling. Updated orders models and resolved products migration merge (0021_merge_20260609_1921).
+
+
+
+
+This creates a local server that runs on your machine.
+
+👉 It is NOT like a web server you open in browser
+👉 It is NOT tied to Cursor folder
+👉 It just sits in background and waits for tool calls
+
+
+
+MCP is NOT:
+a scheduler
+a watcher
+a background automation tool
+MCP IS:
+
+👉 a set of FUNCTIONS Cursor can call
+
+
+
+
+KEY INSIGHT (this is what you were missing)
+
+👉 MCP does NOT “decide” anything
+👉 Cursor (LLM) does the thinking
+👉 MCP only provides DATA + ACTIONS
+
+
+| Component  | Role          |
+| ---------- | ------------- |
+| MCP server | hands (tools) |
+| Cursor     | brain         |
+| Git/Excel  | resources     |
+
+
+
+
+# Work Report MCP
+
+## Purpose
+
+This MCP server helps automate daily work reporting.
+
+Instead of manually opening Excel and writing daily updates, Cursor can:
+
+1. Read changes from Project A and Project B.
+2. Analyze Git changes.
+3. Generate a professional work summary.
+4. Append rows into the daily report Excel file.
+
+---
+
+# Folder Structure
+
+```text
+D:\
+│
+├── WorkReportMCP\
+│   ├── server.py
+│   ├── config.py
+│   ├── git_tools.py
+│   ├── excel_tools.py
+│   ├── report_generator.py
+│   └── README.md
+│
+├── ProjectA\
+│   └── .git
+│
+├── ProjectB\
+│   └── .git
+│
+└── Daily_Task_Report.xlsx
+```
+
+---
+
+# Excel Format
+
+The Excel file must contain the following columns:
+
+| SR NO. | DATE | PROJECT NAME | TASK /MODULE | DESCRIPTION | SCREENSHORT | DUE DATE | STATUS |
+| ------ | ---- | ------------ | ------------ | ----------- | ----------- | -------- | ------ |
+
+---
+
+# Configuration
+
+Edit `config.py`.
+
+```python
+PROJECTS = {
+    "project_a": r"D:\ProjectA",
+    "project_b": r"D:\ProjectB"
+}
+
+EXCEL_FILE = r"D:\Daily_Task_Report.xlsx"
+```
+
+Replace the paths with actual locations.
+
+---
+
+# Installation
+
+Create virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Activate:
+
+Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
+pip install mcp pandas openpyxl
+```
+
+---
+
+# Cursor MCP Configuration
+
+Add to Cursor MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "work-report": {
+      "command": "D:\\WorkReportMCP\\.venv\\Scripts\\python.exe",
+      "args": [
+        "D:\\WorkReportMCP\\server.py"
+      ]
+    }
+  }
+}
+```
+
+Restart Cursor after saving.
+
+---
+
+# Available Tools
+
+## scan_project
+
+Returns today's project changes.
+
+Example:
+
+```text
+scan_project("project_a")
+```
+
+---
+
+## create_report
+
+Adds a row to Excel.
+
+Example:
+
+```text
+create_report(
+    project_name="Project A",
+    task_module="Authentication",
+    description="Implemented login validation and token refresh handling"
+)
+```
+
+---
+
+# Recommended Workflow
+
+Open Cursor.
+
+Ask:
+
+```text
+Generate today's report for project_a and update Excel.
+```
+
+Cursor should:
+
+1. Call scan_project().
+2. Analyze changes.
+3. Create summary.
+4. Call create_report().
+5. Append row to Excel.
+
+---
+
+# Multiple Projects
+
+If both projects were worked on:
+
+```text
+Generate today's report for all projects and update Excel.
+```
+
+Expected result:
+
+Project A -> Row 1
+
+Project B -> Row 2
+
+Both rows use the same date.
+
+---
+
+# Notes
+
+* Project folders do NOT need to be opened in Cursor.
+* MCP reads repositories directly from configured paths.
+* Git diff is preferred over commit history because work may not be committed yet.
+* One row is typically generated per project per day.
+* If no changes are detected, no row should be created automatically.
+
+```
+```
