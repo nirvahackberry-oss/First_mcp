@@ -93,47 +93,12 @@
 
 
 import json
-import requests
 from datetime import datetime
 
-from config import (
-    ZOHO_ACCESS_TOKEN,
-    ZOHO_ACCOUNTS_URL,
-    ZOHO_CLIENT_ID,
-    ZOHO_CLIENT_SECRET,
-    ZOHO_REFRESH_TOKEN,
-    ZOHO_SHEET_API_URL,
-    ZOHO_WORKBOOK_ID,
-)
+from config import ZOHO_SHEET_API_URL, ZOHO_WORKBOOK_ID
+from zoho_auth import get_access_token, zoho_request
 
 SHEET_NAME = "Sheet1"
-
-
-def get_access_token():
-    """Get a fresh access token using the refresh token, or fall back to config."""
-    if not ZOHO_REFRESH_TOKEN:
-        if ZOHO_ACCESS_TOKEN:
-            return ZOHO_ACCESS_TOKEN
-        raise Exception("No ZOHO_REFRESH_TOKEN or ZOHO_ACCESS_TOKEN configured.")
-
-    url = f"{ZOHO_ACCOUNTS_URL}/oauth/v2/token"
-
-    params = {
-        "refresh_token": ZOHO_REFRESH_TOKEN,
-        "client_id": ZOHO_CLIENT_ID,
-        "client_secret": ZOHO_CLIENT_SECRET,
-        "grant_type": "refresh_token",
-    }
-
-    response = requests.post(url, params=params)
-    response.raise_for_status()
-
-    data = response.json()
-
-    if "access_token" not in data:
-        raise Exception(f"Unable to get access token: {data}")
-
-    return data["access_token"]
 
 
 def add_report_row(
@@ -156,13 +121,12 @@ def add_report_row(
 
 
 
-    access_token = get_access_token()
+    get_access_token()
     date_str = report_date or datetime.now().strftime("%d/%m/%Y")
 
     url = f"{ZOHO_SHEET_API_URL}/{ZOHO_WORKBOOK_ID}"
 
     headers = {
-        "Authorization": f"Zoho-oauthtoken {access_token}",
         "Content-type": "application/x-www-form-urlencoded;charset=UTF-8",
     }
 
@@ -184,12 +148,7 @@ def add_report_row(
         "json_data": json.dumps(row_data)
     }
 
-    response = requests.post(
-        url,
-        headers=headers,
-        data=payload,
-        timeout=30
-    )
+    response = zoho_request("POST", url, headers=headers, data=payload, timeout=30)
 
     try:
         result = response.json()
