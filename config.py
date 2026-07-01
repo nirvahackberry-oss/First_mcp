@@ -13,7 +13,8 @@ def _env(key: str, default: str = "") -> str:
 PROJECTS = {
     "vlab": r"C:\isolated-lab",
     "laajavaab": r"C:\boutique\boutique",
-    "Ignito_experia": r"C:\vlab\Ignito_experia"
+    "Ignito_experia": r"C:\vlab\Ignito_experia",
+    "market-lens": r"C:\market-lens"
 }
 
 # Only include git activity from these branches in daily reports.
@@ -21,6 +22,7 @@ REPORT_BRANCHES = {
     "vlab": ["Nirva", "main"],
     "laajavaab": ["Nirva"],
     "Ignito_experia": ["Nirva","main"],
+    "market-lens": ["dev_nirva"],
 }
 
 # Cursor workspace slugs under %USERPROFILE%\.cursor\projects\
@@ -29,6 +31,7 @@ CURSOR_PROJECTS = {
     "vlab": "c-isolated-lab",
     "laajavaab": "c-boutique-boutique",
     "Ignito_experia": "c-Ignito_experia",
+    "market-lens": "c-market-lens",
 }
 
 EXCEL_FILE = r"c:\Nirva Padaliya Task Sheet.xlsx"
