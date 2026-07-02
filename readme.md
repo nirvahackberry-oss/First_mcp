@@ -25,6 +25,7 @@ D:\
 |   ├── cursor_tools.py        # Cursor chat transcript history
 |   ├── report_generator.py    # Combines activity sources
 |   ├── excel_tools.py         # Zoho Sheet API (append rows)
+|   ├── zoho_auth.py           # OAuth token refresh and .env persistence
 |   ├── get_zoho_token.py      # OAuth helper for Zoho tokens
 |   ├── requirements.txt
 |   ├── .env.example           # Template for secrets (commit this)
@@ -34,10 +35,8 @@ D:\
 ├── ProjectA\
 │   └── .git
 │
-├── ProjectB\
-│   └── .git
-│
-└── Daily_Task_Report.xlsx
+└── ProjectB\
+    └── .git
 ```
 
 ---
@@ -75,6 +74,9 @@ ZOHO_SHEET_API_URL=https://sheet.zoho.in/api/v2
 ZOHO_REDIRECT_URI=http://localhost:8080/callback
 ```
 
+- `ZOHO_REFRESH_TOKEN` only needs to be set once (via `get_zoho_token.py`).
+- `ZOHO_ACCESS_TOKEN` is refreshed automatically by `zoho_auth.py` and saved back to `.env`.
+
 Never commit `.env`. It is listed in `.gitignore`.
 
 ### 2. Project paths and branches (`config.py`)
@@ -95,13 +97,17 @@ Git activity is only counted from these branches. Local uncommitted changes are 
 
 ### 3. Cursor history (`config.py`)
 
+Map each project to its **Cursor workspace slug** (folder name under `.cursor\projects\`, e.g. `C:\my-app` → `c-my-app`):
+
 ```python
 CURSOR_TRANSCRIPTS_ROOT = r"C:\Users\<you>\.cursor\projects"
 CURSOR_PROJECTS = {
-    "project_a": "PATH TO PROJECT A",
-    "project_b": "PATH TO PROJECT B",
+    "project_a": "c-ProjectA",
+    "project_b": "d-ProjectB",
 }
 ```
+
+Transcripts are read from `<CURSOR_TRANSCRIPTS_ROOT>\<slug>\agent-transcripts\`.
 
 ---
 
@@ -118,19 +124,23 @@ pip install -r requirements.txt
 1. Create a Zoho API client at [Zoho API Console (India)](https://api-console.zoho.in/).
 2. Add scopes: `ZohoSheet.dataAPI.READ`, `ZohoSheet.dataAPI.UPDATE`.
 3. Set redirect URI to `http://localhost:8080/callback`.
-4. Run the token helper:
+4. Put `ZOHO_CLIENT_ID` and `ZOHO_CLIENT_SECRET` in `.env`.
+5. Run the token helper (choose one):
+
+**Automatic (recommended)** — opens the browser and saves tokens to `.env`:
+
+```bash
+python get_zoho_token.py --auto
+```
+
+**Manual** — print the auth URL, approve access, then pass the `code` from the redirect URL:
 
 ```bash
 python get_zoho_token.py
-```
-
-Open the printed URL, approve access, copy the `code` from the redirect URL, then:
-
-```bash
 python get_zoho_token.py <auth_code>
 ```
 
-5. Copy `refresh_token` and `access_token` from the response into `.env`.
+Tokens are written to `.env` automatically. After that, `zoho_auth.py` refreshes the access token when it expires and updates `.env` for you.
 
 ---
 
@@ -199,7 +209,7 @@ Cursor should:
 ### Examples
 
 ```text
-Generate today's report for all projects and update Excel.
+Generate today's report for all projects and update Zoho Sheet.
 ```
 
 ---
@@ -208,6 +218,7 @@ Generate today's report for all projects and update Excel.
 
 - Project repos do **not** need to be open in Cursor; paths are read from `config.py`.
 - Use **Zoho India** endpoints (`sheet.zoho.in`, `accounts.zoho.in`) for India-region accounts.
+- Zoho access tokens expire; the server refreshes them via `zoho_auth.py` and persists the new token to `.env`. If refresh fails, re-run `python get_zoho_token.py --auto`.
 - Prefer running reports at end of day or next morning so uncommitted work is still captured.
 - One row per project per day when activity exists.
 - Spreadsheet rules: append only, never edit or overwrite existing rows.
