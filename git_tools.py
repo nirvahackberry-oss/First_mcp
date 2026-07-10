@@ -1,5 +1,6 @@
 import subprocess
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 from config import PROJECTS, REPORT_BRANCHES
 
@@ -162,7 +163,58 @@ def get_unpushed_commits(project_name: str, report_date: str | date | None = Non
     return commits
 
 
-def get_local_changes(project_name: str) -> dict:
+def _path_from_status_line(line: str) -> str | None:
+    if len(line) < 4:
+        return None
+    entry = line[3:].strip()
+    if not entry:
+        return None
+    if " -> " in entry:
+        return entry.split(" -> ", 1)[1]
+    return entry
+
+
+def _paths_from_status(status_short: str) -> list[str]:
+    paths: list[str] = []
+    for line in status_short.splitlines():
+        path = _path_from_status_line(line)
+        if path:
+            paths.append(path)
+    return paths
+
+
+def _file_modified_on_date(repo_path: str, rel_path: str, day: date) -> bool:
+    full_path = Path(repo_path) / rel_path
+    if not full_path.exists():
+        return False
+    modified = datetime.fromtimestamp(full_path.stat().st_mtime).date()
+    return modified == day
+
+
+def _filter_paths_by_modification_date(
+    repo_path: str, paths: list[str], day: date
+) -> list[str]:
+    seen: set[str] = set()
+    matching: list[str] = []
+    for rel_path in paths:
+        if rel_path in seen:
+            continue
+        seen.add(rel_path)
+        if _file_modified_on_date(repo_path, rel_path, day):
+            matching.append(rel_path)
+    return matching
+
+
+def _filter_status_lines(status_short: str, matching_paths: set[str]) -> str:
+    lines: list[str] = []
+    for line in status_short.splitlines():
+        path = _path_from_status_line(line)
+        if path and path in matching_paths:
+            lines.append(line)
+    return "\n".join(lines)
+
+
+def get_local_changes(project_name: str, report_date: str | date | None = None) -> dict:
     repo_path = _repo_path(project_name)
     if not repo_path:
         return {"error": "Project not found", "has_changes": False}
@@ -181,16 +233,40 @@ def get_local_changes(project_name: str) -> dict:
         }
 
     status = _run_git(repo_path, "status", "--short")
-    unstaged = _run_git(repo_path, "diff", "--stat")
-    staged = _run_git(repo_path, "diff", "--cached", "--stat")
     untracked = _run_git(repo_path, "ls-files", "--others", "--exclude-standard")
+    untracked_files = untracked.splitlines() if untracked else []
+
+    if report_date is not None:
+        day = _parse_report_date(report_date)
+        all_paths = _paths_from_status(status) + untracked_files
+        matching_paths = _filter_paths_by_modification_date(repo_path, all_paths, day)
+        matching_set = set(matching_paths)
+
+        if not matching_paths:
+            return {
+                "status": "",
+                "unstaged_diff_stat": "",
+                "staged_diff_stat": "",
+                "untracked_files": [],
+                "has_changes": False,
+                "branch": current,
+                "allowed_branches": branches,
+            }
+
+        status = _filter_status_lines(status, matching_set)
+        untracked_files = [path for path in untracked_files if path in matching_set]
+        unstaged = _run_git(repo_path, "diff", "--stat", "--", *matching_paths)
+        staged = _run_git(repo_path, "diff", "--cached", "--stat", "--", *matching_paths)
+    else:
+        unstaged = _run_git(repo_path, "diff", "--stat")
+        staged = _run_git(repo_path, "diff", "--cached", "--stat")
 
     return {
         "status": status,
         "unstaged_diff_stat": unstaged,
         "staged_diff_stat": staged,
-        "untracked_files": untracked.splitlines() if untracked else [],
-        "has_changes": bool(status or untracked),
+        "untracked_files": untracked_files,
+        "has_changes": bool(status or untracked_files),
         "branch": current,
         "allowed_branches": branches,
     }
@@ -244,9 +320,7 @@ def get_project_activity(project_name: str, report_date: str | date | None = Non
     branches = _report_branches(project_name, repo_path) if repo_path else []
     commits = get_commits_for_date(project_name, day)
     unpushed = get_unpushed_commits(project_name, day)
-    local = get_local_changes(project_name)
-
-    include_working_tree = day >= date.today() - timedelta(days=1)
+    local = get_local_changes(project_name, day)
 
     sections = []
     branch_note = f"Branches: {', '.join(branches)}" if branches else "Branches: none configured"
@@ -254,17 +328,13 @@ def get_project_activity(project_name: str, report_date: str | date | None = Non
     if commit_text:
         sections.append(commit_text)
 
-    if include_working_tree:
-        local_text = format_local_changes(local)
-        if local_text:
-            sections.append(local_text)
+    local_text = format_local_changes(local)
+    if local_text:
+        sections.append(local_text)
 
-        unpushed_text = format_commits(
-            unpushed if commits or local.get("has_changes") else unpushed,
-            "Unpushed commits:",
-        )
-        if unpushed_text:
-            sections.append(unpushed_text)
+    unpushed_text = format_commits(unpushed, "Unpushed commits:")
+    if unpushed_text:
+        sections.append(unpushed_text)
 
     has_git_activity = bool(commits or unpushed or local.get("has_changes"))
 
