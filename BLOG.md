@@ -112,11 +112,11 @@ Stack: **Python**, **FastMCP**, **requests**, **python-dotenv**, **Zoho Sheet AP
 | Source | When included | Why it matters |
 | ------ | ------------- | -------------- |
 | Git commits | On configured branches for that date | What actually landed in version control |
-| Unpushed commits | On configured branches (today/yesterday) | Work done but not on remote yet |
-| Local changes | Uncommitted work on an allowed branch (today/yesterday) | WIP that commit history won't show |
+| Unpushed commits | On configured branches, committed on that date but not yet pushed | Work done but not on remote yet |
+| Local changes | Uncommitted files on an allowed branch whose filesystem mtime matches that date | WIP that commit history won't show |
 | Cursor sessions | Chat transcripts modified on that date | Context, debugging, and decisions that never became a commit |
 
-Git activity is limited to **report branches per project** (for example `Nirva`, `main`, or `dev_nirva`). That keeps unrelated branch noise out of your daily log.
+Git activity is limited to **report branches per project** (for example `Nirva`, `main`, or `dev_nirva`). That keeps unrelated branch noise out of your daily log. For a given report date, local uncommitted changes are scoped to files actually modified that day (filesystem mtime), so yesterday's report won't pick up files you edited this morning.
 
 Cursor transcripts are read from your local workspace folder under `.cursor/projects/<workspace-slug>/agent-transcripts/`.
 
@@ -142,8 +142,8 @@ From my side, it feels like one command.
 
 | Tool | Purpose |
 | ---- | ------- |
-| `get_project_changes` | Git changes on configured branches only |
-| `get_pending_changes` | Current uncommitted work on the active report branch |
+| `get_project_changes` | Git changes on configured branches for a date (commits, unpushed, local changes filtered by file mtime) |
+| `get_pending_changes` | All current uncommitted work on the active report branch (no date filter) |
 
 ---
 
@@ -199,7 +199,7 @@ The summary is still human-readable and professional — because Cursor writes i
 
 2. **Reporting quality depends on input quality.** Git + Cursor history beats commits alone.
 
-3. **Guardrails matter.** Branch filters, skip-no-activity logic, and append-only sheet rules prevent bad data from entering your log.
+3. **Guardrails matter.** Branch filters, file-modification-date filtering for local changes, skip-no-activity logic, and append-only sheet rules prevent bad data from entering your log.
 
 4. **Developer ergonomics matter.** One prompt beats a six-step script you'll stop using after a week.
 
@@ -326,7 +326,7 @@ MCP = hands. Cursor = brain.
 **Slide 4 — Data sources**
 ✓ Git commits (branch-filtered)
 ✓ Unpushed commits
-✓ Local uncommitted changes
+✓ Local uncommitted changes (filtered by file mtime for the report date)
 ✓ Cursor chat transcripts
 
 **Slide 5 — One prompt**
@@ -366,5 +366,5 @@ Repo in comments. Full write-up on Medium.
 
 **Credibility boosters**
 - Include one real (redacted) before/after report row
-- Mention one problem you solved (token refresh, branch noise, empty rows)
+- Mention one problem you solved (token refresh, branch noise, stale local changes on past dates)
 - State time saved as a concrete number (e.g. 20–30 min → ~2 min)

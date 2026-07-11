@@ -111,7 +111,7 @@ This is the most shareable part — make it concrete.
 Pick 3–4, not everything:
 
 * Python + FastMCP — lightweight MCP server
-* Git intelligence — branch filtering, local changes, unpushed commits
+* Git intelligence — branch filtering, local changes filtered by file modification date, unpushed commits
 * Cursor transcript parsing — reads agent-transcripts by workspace slug
 * Zoho OAuth — get\_zoho\_token.py --auto, auto token refresh via zoho\_auth.py
 * Config-driven — config.py for paths/branches, .env for secrets
@@ -263,13 +263,13 @@ Source				Why it matters
 
 Git commits			What shipped on report branches
 
-Unpushed commits		Work done but not on remote yet
+Unpushed commits		Committed on that date but not yet pushed to remote
 
-Local uncommitted changes	Today/yesterday WIP on allowed branches
+Local uncommitted changes	Uncommitted files on allowed branches whose filesystem mtime matches the report date
 
 Cursor transcripts		Context that never made it to a commit message
 
-I also configured branch rules per project, so noise from unrelated branches doesn’t pollute the report.
+I also configured branch rules per project, so noise from unrelated branches doesn’t pollute the report. Local uncommitted changes are filtered by file modification date, so only files touched on the report day are included.
 
 
 
@@ -325,7 +325,7 @@ The summary is still human-readable and professional — because Cursor writes i
 
 1. MCP shines when it exposes domain actions, not generic wrappers.
 2. Reporting quality depends on input quality — git + Cursor history beats commits alone.
-3. Guardrails matter (branch filters, skip-no-activity, append-only sheet rules).
+3. Guardrails matter (branch filters, file-mtime filtering for local changes, skip-no-activity, append-only sheet rules).
 4. Developer ergonomics matter — one prompt beats a 6-step script.
 
 

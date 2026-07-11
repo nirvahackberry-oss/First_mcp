@@ -95,6 +95,8 @@ REPORT_BRANCHES = {
 
 Git activity is only counted from these branches. Local uncommitted changes are only included when you are on one of the allowed branches.
 
+When a `report_date` is provided, uncommitted changes are further filtered to files whose **filesystem modification date** matches that day. Without a date (e.g. `get_pending_changes`), all current local changes on the branch are returned.
+
 ### 3. Cursor history (`config.py`)
 
 Map each project to its **Cursor workspace slug** (folder name under `.cursor\projects\`, e.g. `C:\my-app` → `c-my-app`):
@@ -170,8 +172,8 @@ Restart Cursor after saving.
 | `scan_project(project_name, report_date?)` | Full activity for one project (git + Cursor). Date format: `DD/MM/YYYY`. |
 | `list_active_projects(report_date?)` | Returns only projects that have activity for the date. |
 | `generate_daily_report(project_name, report_date?)` | Prompt to generate TASK_MODULE and DESCRIPTION. Skips if no activity. |
-| `get_project_changes(project_name, report_date?)` | Git changes on configured branches only. |
-| `get_pending_changes(project_name)` | Current uncommitted changes on the active report branch. |
+| `get_project_changes(project_name, report_date?)` | Git changes on configured branches for the date (commits, unpushed, and local changes filtered by file mtime). |
+| `get_pending_changes(project_name)` | All current uncommitted changes on the active report branch (no date filter). |
 | `create_report(project_name, task_module, description, status?, report_date?)` | Append a row to Zoho Sheet. Skips if no activity. |
 
 ---
@@ -183,8 +185,8 @@ For each project and date, the server checks:
 | Source | When included |
 | ------ | ------------- |
 | Git commits | On configured branches for that date |
-| Unpushed commits | On configured branches (today/yesterday) |
-| Local changes | Uncommitted work on an allowed branch (today/yesterday) |
+| Unpushed commits | On configured branches, committed on that date but not yet pushed |
+| Local changes | Uncommitted files on an allowed branch whose filesystem mtime matches that date |
 | Cursor sessions | Chat transcripts modified on that date |
 
 If none of the above exist, the project is **skipped**.
@@ -219,7 +221,7 @@ Generate today's report for all projects and update Zoho Sheet.
 - Project repos do **not** need to be open in Cursor; paths are read from `config.py`.
 - Use **Zoho India** endpoints (`sheet.zoho.in`, `accounts.zoho.in`) for India-region accounts.
 - Zoho access tokens expire; the server refreshes them via `zoho_auth.py` and persists the new token to `.env`. If refresh fails, re-run `python get_zoho_token.py --auto`.
-- Prefer running reports at end of day or next morning so uncommitted work is still captured.
+- Prefer running reports at end of day or next morning so uncommitted work is still captured. For past dates, local changes rely on file modification timestamps — files touched on other days are excluded.
 - One row per project per day when activity exists.
 - Spreadsheet rules: append only, never edit or overwrite existing rows.
 
